@@ -35,24 +35,30 @@ jobs:
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_PRIVATE_KEY }}
           script: |
-            # 1. EC2 서버에 프로젝트를 저장할 폴더로 이동
+            # --- EC2 서버에서 실행될 명령어들 ---
+
+            # 1. 프로젝트를 저장할 디렉토리로 이동
             APP_DIR="/home/ubuntu/app"
             mkdir -p $APP_DIR
             cd $APP_DIR
 
-            # 2. 최신 소스 코드를 GitHub에서 clone (기존 폴더는 삭제)
+            # 2. 최신 소스 코드를 GitHub에서 clone
+            REPO_URL="https://github.com/leegyulim/my-php-board-project.git"
             rm -rf my-php-board-project
-            git clone https://github.com/leegyulim/my-php-board-project.git
+            git clone $REPO_URL
 
-            # 3. 프로젝트 폴더로 이동
+            # 3. 프로젝트 디렉토리로 이동
             cd my-php-board-project
 
-            # 4. Docker Compose로 모든 서비스 실행
-            #    'pull'은 docker-compose.yml에 명시된 이미지(mariadb)의 최신 버전을 받아옵니다.
-            docker-compose pull
-            #    'up -d'는 백그라운드에서 모든 서비스를 실행/재시작합니다.
-            #    --build 옵션은 docker-compose.yml에 build 지시가 있는 서비스(web)의 이미지를 새로 만듭니다.
-            docker-compose up -d --build
+            # 4. DB 비밀번호 등 민감한 정보를 .env 파일로 생성
+            echo "MYSQL_ROOT_PASSWORD=${{ secrets.DB_ROOT_PASSWORD }}" > .env
+            echo "MYSQL_DATABASE=${{ secrets.DB_NAME }}" >> .env
+            echo "MYSQL_USER=${{ secrets.DB_USER }}" >> .env
+            echo "MYSQL_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
 
-            # 5. 불필요하게 생성된 Docker 이미지 정리 (선택사항)
-            docker image prune -f
+            # 5. ⭐⭐⭐ 핵심 수정 부분 ⭐⭐⭐
+            #    모든 docker 및 docker-compose 명령어를 'docker' 그룹 권한으로 실행합니다.
+            #    이렇게 하면 'Cannot connect to the Docker daemon' 오류를 해결할 수 있습니다.
+            sudo -E docker-compose pull
+            sudo -E docker-compose up -d --build
+            sudo -E docker image prune -f
