@@ -1,0 +1,58 @@
+name: PHP Board CI/CD
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  # CI Job: PHP 웹 애플리케이션 이미지를 빌드하여 Docker Hub에 푸시
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Build and push PHP Web Image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          # ⭐ 이미지 이름을 새 프로젝트에 맞게 수정해주세요.
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/my-php-board-app:latest
+
+  # CD Job: EC2 서버에 접속하여 Docker Compose로 전체 서비스 배포
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_PRIVATE_KEY }}
+          script: |
+            # 1. EC2 서버에 프로젝트를 저장할 폴더로 이동
+            APP_DIR="/home/ubuntu/app"
+            mkdir -p $APP_DIR
+            cd $APP_DIR
+
+            # 2. 최신 소스 코드를 GitHub에서 clone (기존 폴더는 삭제)
+            rm -rf my-php-board-project
+            git clone https://github.com/leegyulim/my-php-board-project.git
+
+            # 3. 프로젝트 폴더로 이동
+            cd my-php-board-project
+
+            # 4. Docker Compose로 모든 서비스 실행
+            #    'pull'은 docker-compose.yml에 명시된 이미지(mariadb)의 최신 버전을 받아옵니다.
+            docker-compose pull
+            #    'up -d'는 백그라운드에서 모든 서비스를 실행/재시작합니다.
+            #    --build 옵션은 docker-compose.yml에 build 지시가 있는 서비스(web)의 이미지를 새로 만듭니다.
+            docker-compose up -d --build
+
+            # 5. 불필요하게 생성된 Docker 이미지 정리 (선택사항)
+            docker image prune -f

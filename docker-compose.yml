@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  # 1. 웹 서버 서비스 (PHP 애플리케이션)
+  web:
+    # 현재 폴더의 Dockerfile을 사용하여 'web' 이미지를 빌드합니다.
+    build: .
+    container_name: my-board-web
+    # EC2 서버의 80번 포트를 컨테이너의 80번 포트와 연결합니다.
+    ports:
+      - "80:80"
+    # 'db' 서비스가 먼저 실행되도록 의존성을 설정합니다.
+    depends_on:
+      - db
+    # 항상 재시작되도록 설정합니다.
+    restart: always
+
+  # 2. 데이터베이스 서비스 (MariaDB)
+  db:
+    # Docker Hub의 공식 MariaDB 최신 이미지를 사용합니다.
+    image: mariadb:latest
+    container_name: my-board-db
+    # ⭐ 사용자님의 SQL 파일과 코드에 맞게 환경 변수를 설정합니다.
+    environment:
+      MYSQL_ROOT_PASSWORD: gyulim_pw # 루트 비밀번호 (아무거나 강력하게 설정)
+      MYSQL_DATABASE: phpdb                      # SQL 파일에 있던 데이터베이스 이름
+      MYSQL_USER: php                            # PHP 코드에 있던 사용자 이름
+      MYSQL_PASSWORD: "1234"                       # PHP 코드에 있던 비밀번호
+    # 'volumes'를 사용하여 데이터를 영구적으로 보존합니다.
+    volumes:
+      # MariaDB 컨테이너가 처음 시작될 때, 이 폴더 안의 .sql 파일을 자동으로 실행합니다.
+      - ./db_init:/docker-entrypoint-initdb.d
+      # 실제 데이터는 컨테이너 외부에 있는 'db_data' 볼륨에 저장됩니다.
+      - db_data:/var/lib/mysql
+    # 항상 재시작되도록 설정합니다.
+    restart: always
+
+# 데이터 영구 저장을 위한 볼륨(Volume)을 선언합니다.
+volumes:
+  db_data:
