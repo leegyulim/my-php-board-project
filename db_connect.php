@@ -18,5 +18,3 @@
         // 실제 서비스에서는 에러 로그를 파일에 기록해야 합니다.
         die("DB Connection Failed: " . $e->getMessage());
     }
-?>
-
