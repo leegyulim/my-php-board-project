@@ -1,4 +1,5 @@
 <?php
+    session_start();
     $id = $_REQUEST["id"];
 	$pw = $_REQUEST["pw"];
 	
@@ -6,7 +7,6 @@
 	
 	$query = $db->query("select * from member where id='$id' and pw='$pw'");
     if ($row = $query->fetch()) {
-         session_start();
 		$_SESSION["userId"] = $row["id"];
 	    $_SESSION["userName"] = $row["name"];
 		
