@@ -50,5 +50,5 @@ ul {
 </ul>
 
 <h2>2. 중고 거래 사기를 당했다면? </h2>
-<img src="files/abcde.jpg">
+<img src="/images/abcde.jpg">
 <p id="comment">※ 2-1. 국민신문고 어플을 통해 간단하게 신고하세요!</p></body>
